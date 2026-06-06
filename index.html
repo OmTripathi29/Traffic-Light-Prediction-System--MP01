@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TrafficIQ Live Dashboard</title>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    background:#0f1117;
+    color:white;
+    font-family:Arial, Helvetica, sans-serif;
+}
+
+.header{
+    background:#181c25;
+    padding:20px;
+    text-align:center;
+    font-size:28px;
+    font-weight:bold;
+    border-bottom:1px solid #2b3242;
+}
+
+.header span{
+    color:#00e5a0;
+}
+
+.container{
+    max-width:1200px;
+    margin:auto;
+    padding:30px;
+}
+
+.status{
+    text-align:center;
+    margin-bottom:25px;
+    color:#999;
+}
+
+.grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:20px;
+}
+
+.card{
+    background:#181c25;
+    border:1px solid #2b3242;
+    border-radius:12px;
+    padding:25px;
+    text-align:center;
+}
+
+.card h3{
+    color:#999;
+    margin-bottom:10px;
+}
+
+.value{
+    font-size:40px;
+    font-weight:bold;
+}
+
+.cars{
+    color:#00e5a0;
+}
+
+.bikes{
+    color:#f5a623;
+}
+
+.trucks{
+    color:#ff4d4d;
+}
+
+.total{
+    color:#7ec8ff;
+}
+
+.signal-card{
+    margin-top:30px;
+    background:#181c25;
+    border:1px solid #2b3242;
+    border-radius:12px;
+    padding:30px;
+}
+
+.signal-wrapper{
+    display:flex;
+    align-items:center;
+    gap:40px;
+}
+
+.signal-box{
+    background:black;
+    padding:15px;
+    border-radius:10px;
+}
+
+.light{
+    width:50px;
+    height:50px;
+    border-radius:50%;
+    margin:10px;
+    background:#222;
+}
+
+.green{
+    background:#00e5a0;
+    box-shadow:0 0 20px #00e5a0;
+}
+
+.signal-info h2{
+    color:#00e5a0;
+    margin-bottom:10px;
+}
+
+.green-time{
+    font-size:70px;
+    font-weight:bold;
+}
+
+.subtitle{
+    color:#999;
+}
+
+.live-data{
+    margin-top:30px;
+}
+
+.live-data pre{
+    background:#181c25;
+    border:1px solid #2b3242;
+    border-radius:10px;
+    padding:20px;
+    overflow:auto;
+}
+
+</style>
+</head>
+<body>
+
+<div class="header">
+    Traffic<span>IQ</span> Live Dashboard
+</div>
+
+<div class="container">
+
+    <div class="status" id="status">
+        Connecting to Server...
+    </div>
+
+    <div class="grid">
+
+        <div class="card">
+            <h3>Cars</h3>
+            <div class="value cars" id="cars">0</div>
+        </div>
+
+        <div class="card">
+            <h3>Bikes</h3>
+            <div class="value bikes" id="bikes">0</div>
+        </div>
+
+        <div class="card">
+            <h3>Trucks</h3>
+            <div class="value trucks" id="trucks">0</div>
+        </div>
+
+        <div class="card">
+            <h3>Total Vehicles</h3>
+            <div class="value total" id="total">0</div>
+        </div>
+
+    </div>
+
+    <div class="signal-card">
+
+        <div class="signal-wrapper">
+
+            <div class="signal-box">
+                <div class="light"></div>
+                <div class="light"></div>
+                <div class="light green"></div>
+            </div>
+
+            <div class="signal-info">
+
+                <h2>PREDICTED GREEN TIME</h2>
+
+                <div class="green-time" id="greenTime">
+                    0s
+                </div>
+
+                <div class="subtitle">
+                    Generated using traffic_model.pkl
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="live-data">
+
+        <h2 style="margin-bottom:10px">
+            Live ESP32 Data
+        </h2>
+
+        <pre id="liveStatus">
+Waiting...
+        </pre>
+
+    </div>
+
+</div>
+
+<script>
+
+const API = "http://10.190.168.24:5000/api";
+
+async function loadPrediction()
+{
+    try
+    {
+        const response =
+            await fetch(`${API}/latest-prediction`);
+
+        const data =
+            await response.json();
+
+        document.getElementById("cars").innerText =
+            data.cars || 0;
+
+        document.getElementById("bikes").innerText =
+            data.bikes || 0;
+
+        document.getElementById("trucks").innerText =
+            data.trucks || 0;
+
+        document.getElementById("total").innerText =
+            (data.cars || 0) +
+            (data.bikes || 0) +
+            (data.trucks || 0);
+
+        document.getElementById("greenTime").innerText =
+            (data.green_time || 0) + "s";
+
+        document.getElementById("status").innerText =
+            "Connected ✅";
+    }
+    catch(error)
+    {
+        document.getElementById("status").innerText =
+            "Server Offline ❌";
+    }
+}
+
+async function loadLiveStatus()
+{
+    try
+    {
+        const response =
+            await fetch(`${API}/live-status`);
+
+        const data =
+            await response.json();
+
+        document.getElementById("liveStatus")
+            .textContent =
+            JSON.stringify(data, null, 2);
+    }
+    catch(error)
+    {
+        console.log(error);
+    }
+}
+
+loadPrediction();
+loadLiveStatus();
+
+setInterval(loadPrediction, 2000);
+setInterval(loadLiveStatus, 2000);
+
+</script>
+
+</body>
+</html>
